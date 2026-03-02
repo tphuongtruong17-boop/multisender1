@@ -1,14 +1,29 @@
 {
   "targets": {
     "release": {
-      "outFile": "build/MultiSender.wasm",
-      "textFile": "build/MultiSender.wat",
-      "optimizeLevel": 3,
-      "shrinkLevel": 1
+      "outFile": "build/MultiSender.wasm"
     }
   },
   "options": {
+    "sourceMap": false,
+    "optimizeLevel": 3,
+    "shrinkLevel": 1,
+    "converge": true,
+    "noAssert": false,
+    "enable": [
+      "sign-extension",
+      "mutable-globals",
+      "nontrapping-f2i",
+      "bulk-memory",
+      "simd",
+      "reference-types",
+      "multi-value"
+    ],
     "runtime": "stub",
-    "transform": "@btc-vision/opnet-transform"
+    "memoryBase": 0,
+    "initialMemory": 1,
+    "exportStart": "start",
+    "transform": "@btc-vision/opnet-transform",
+    "use": ["abort=src/contract/index/abort"]
   }
 }
