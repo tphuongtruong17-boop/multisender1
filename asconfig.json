@@ -1,0 +1,13 @@
+{
+  "targets": {
+    "release": {
+      "outFile": "build/MultiSender.wasm",
+      "textFile": "build/MultiSender.wat",
+      "optimizeLevel": 3,
+      "shrinkLevel": 1
+    }
+  },
+  "options": {
+    "runtime": "stub"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "multisender1",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "npx asc src/index.ts --config asconfig.json --target release"
+  },
+  "dependencies": {
+    "@btc-vision/btc-runtime": "latest",
+    "as-bignum": "latest"
+  },
+  "devDependencies": {
+    "assemblyscript": "latest"
+  },
+  "type": "module"
+}
