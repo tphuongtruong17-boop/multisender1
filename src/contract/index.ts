@@ -1,5 +1,13 @@
-export { MultiSender } from '../contracts/MultiSender';
+import { Blockchain } from "@btc-vision/btc-runtime/runtime";
+import { revertOnError } from "@btc-vision/btc-runtime/runtime/abort/abort";
+import { MultiSender } from "../contracts/MultiSender";
 
-export function abort(message: usize, fileName: usize, line: u32, column: u32): void {
-    // handled by opnet-transform
+Blockchain.contract = () => {
+    return new MultiSender();
+};
+
+export * from "@btc-vision/btc-runtime/runtime/exports";
+
+export function abort(message: string, fileName: string, line: u32, column: u32): void {
+    revertOnError(message, fileName, line, column);
 }
