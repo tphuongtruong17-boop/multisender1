@@ -1,0 +1,66 @@
+{
+    "functions": [
+        {
+            "name": "multiSendBTC",
+            "type": "Function",
+            "payable": false,
+            "onlyOwner": false,
+            "inputs": [
+                {
+                    "name": "addressAndAmount",
+                    "type": "ADDRESS_UINT256_TUPLE"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "success",
+                    "type": "BOOL"
+                }
+            ]
+        },
+        {
+            "name": "withdrawFees",
+            "type": "Function",
+            "payable": false,
+            "onlyOwner": false,
+            "inputs": [
+                {
+                    "name": "to",
+                    "type": "ADDRESS"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "amount",
+                    "type": "UINT256"
+                }
+            ]
+        }
+    ],
+    "events": [
+        {
+            "name": "MultiSentBTC",
+            "values": [
+                {
+                    "name": "total",
+                    "type": "UINT256"
+                },
+                {
+                    "name": "recipients",
+                    "type": "UINT32"
+                }
+            ],
+            "type": "Event"
+        },
+        {
+            "name": "FeesWithdrawn",
+            "values": [
+                {
+                    "name": "amount",
+                    "type": "UINT256"
+                }
+            ],
+            "type": "Event"
+        }
+    ]
+}

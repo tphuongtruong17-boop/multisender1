@@ -4,12 +4,29 @@ import {
     Blockchain,
     BytesWriter,
     Calldata,
-    encodeSelector,
+    NetEvent,
     OP_NET,
     Revert,
     SafeMath,
-    Selector,
 } from '@btc-vision/btc-runtime/runtime';
+
+// ── Event classes (bắt buộc khai báo để OPNetTransform nhận ra) ──
+class MultiSentBTCEvent extends NetEvent {
+    constructor(total: u256, recipients: u32) {
+        const w = new BytesWriter(36);
+        w.writeU256(total);
+        w.writeU32(recipients);
+        super('MultiSentBTC', w);
+    }
+}
+
+class FeesWithdrawnEvent extends NetEvent {
+    constructor(amount: u256) {
+        const w = new BytesWriter(32);
+        w.writeU256(amount);
+        super('FeesWithdrawn', w);
+    }
+}
 
 @final
 export class MultiSender extends OP_NET {
@@ -27,66 +44,61 @@ export class MultiSender extends OP_NET {
         Blockchain.log('MultiSender v1.0 deployed');
     }
 
-    public override execute(method: Selector, calldata: Calldata): BytesWriter {
-        switch (method) {
-            case encodeSelector('multiSendBTC()'):
-                return this.multiSendBTC(calldata);
-            case encodeSelector('withdrawFees()'):
-                return this.withdrawFees(calldata);
-            default:
-                return super.execute(method, calldata);
-        }
-    }
+    @method({
+        name: 'addressAndAmount',
+        type: ABIDataTypes.ADDRESS_UINT256_TUPLE,
+    })
+    @emit('MultiSentBTC')
+    @returns({
+        name: 'success',
+        type: ABIDataTypes.BOOL,
+    })
+    public multiSendBTC(calldata: Calldata): BytesWriter {
+        const map = calldata.readAddressMapU256();
+        const addresses: Address[] = map.keys();
 
-    private multiSendBTC(calldata: Calldata): BytesWriter {
-        const count: u32 = calldata.readU32();
-        if (count === 0) throw new Revert('No recipients');
-        if (count > u32(this.MAX_RECIPS)) throw new Revert('Exceeds 200 recipients');
+        if (addresses.length === 0) throw new Revert('No recipients');
+        if (addresses.length > this.MAX_RECIPS) throw new Revert('Exceeds 200');
 
-        const recipients: Address[] = [];
-        const amounts: u256[] = [];
         let total: u256 = u256.Zero;
-
-        for (let i: u32 = 0; i < count; i++) {
-            const addr: Address = calldata.readAddress();
-            const amt: u256 = calldata.readU256();
-            recipients.push(addr);
-            amounts.push(amt);
-            total = SafeMath.add(total, amt);
+        for (let i: i32 = 0; i < addresses.length; i++) {
+            const addr = addresses[i];
+            if (!addr) throw new Revert('Invalid address');
+            total = SafeMath.add(total, map.get(addr));
         }
 
-        const feeRaw: u256 = SafeMath.div(
+        const feeRaw = SafeMath.div(
             SafeMath.mul(total, u256.fromU64(this.FEE_BPS)),
             u256.fromU64(this.BPS_DENOM),
         );
-        const dust: u256 = u256.fromU64(this.DUST);
-        const fee: u256 = feeRaw.gt(dust) ? feeRaw : dust;
-        const needed: u256 = SafeMath.add(total, fee);
+        const dust = u256.fromU64(this.DUST);
+        const fee = feeRaw.gt(dust) ? feeRaw : dust;
 
-        if (Blockchain.tx.value.lt(needed)) {
+        if (Blockchain.tx.value.lt(SafeMath.add(total, fee)))
             throw new Revert('Insufficient BTC');
+
+        for (let i: i32 = 0; i < addresses.length; i++) {
+            const addr = addresses[i];
+            Blockchain.transfer(addr, map.get(addr));
         }
 
-        for (let i: i32 = 0; i < recipients.length; i++) {
-            Blockchain.transfer(recipients[i], amounts[i]);
-        }
+        const excess = SafeMath.sub(Blockchain.tx.value, SafeMath.add(total, fee));
+        if (excess.gt(dust)) Blockchain.transfer(Blockchain.tx.origin, excess);
 
-        const excess: u256 = SafeMath.sub(Blockchain.tx.value, needed);
-        if (excess.gt(dust)) {
-            Blockchain.transfer(Blockchain.tx.origin, excess);
-        }
-
-        const w = new BytesWriter(1);
-        w.writeBoolean(true);
-        return w;
+        this.emitEvent(new MultiSentBTCEvent(total, u32(addresses.length)));
+        return new BytesWriter(0);
     }
 
-    private withdrawFees(calldata: Calldata): BytesWriter {
+    @method({ name: 'to', type: ABIDataTypes.ADDRESS })
+    @emit('FeesWithdrawn')
+    @returns({ name: 'amount', type: ABIDataTypes.UINT256 })
+    public withdrawFees(calldata: Calldata): BytesWriter {
         this.onlyDeployer(Blockchain.tx.sender);
         const to: Address = calldata.readAddress();
-        const bal: u256 = Blockchain.getBalance(Blockchain.contractAddress);
+        const bal = Blockchain.getBalance(Blockchain.contractAddress);
         if (bal.lte(u256.Zero)) throw new Revert('No fees');
         Blockchain.transfer(to, bal);
+        this.emitEvent(new FeesWithdrawnEvent(bal));
         const w = new BytesWriter(32);
         w.writeU256(bal);
         return w;
