@@ -1,106 +1,101 @@
-import { u256 } from '@btc-vision/as-bignum/assembly';
+import { u256 } from "@btc-vision/as-bignum/assembly";
 import {
     Address,
     Blockchain,
     BytesWriter,
     Calldata,
+    encodeSelector,
     NetEvent,
     OP_NET,
     Revert,
     SafeMath,
-} from '@btc-vision/btc-runtime/runtime';
+    Selector,
+} from "@btc-vision/btc-runtime/runtime";
+import { EMPTY_POINTER } from "@btc-vision/btc-runtime/runtime/math/bytes";
+import { StoredU256 } from "@btc-vision/btc-runtime/runtime/storage/StoredU256";
 
-// ── Event classes (bắt buộc khai báo để OPNetTransform nhận ra) ──
-class MultiSentBTCEvent extends NetEvent {
-    constructor(total: u256, recipients: u32) {
-        const w = new BytesWriter(36);
-        w.writeU256(total);
-        w.writeU32(recipients);
-        super('MultiSentBTC', w);
-    }
-}
-
-class FeesWithdrawnEvent extends NetEvent {
-    constructor(amount: u256) {
-        const w = new BytesWriter(32);
-        w.writeU256(amount);
-        super('FeesWithdrawn', w);
+class MultiSentEvent extends NetEvent {
+    constructor(token: Address, count: u32) {
+        const w = new BytesWriter(32 + 4);
+        w.writeAddress(token);
+        w.writeU32(count);
+        super("MultiSent", w);
     }
 }
 
 @final
 export class MultiSender extends OP_NET {
 
-    private readonly FEE_BPS:    u64 = 10;
-    private readonly BPS_DENOM:  u64 = 10000;
-    private readonly DUST:       u64 = 546;
-    private readonly MAX_RECIPS: i32 = 200;
+    private _txCount: StoredU256 = new StoredU256(1, EMPTY_POINTER);
 
-    public constructor() {
-        super();
+    // ✅ BẮT BUỘC cho OP_NET deploy
+    public onDeploy(): void {
+        // có thể để trống
     }
 
-    public override onDeployment(_calldata: Calldata): void {
-        Blockchain.log('MultiSender v1.0 deployed');
+    public execute(method: Selector, calldata: Calldata): BytesWriter {
+        switch (method) {
+            case encodeSelector("multiSend(address,address[],uint256[])"):
+                return this.multiSend(calldata);
+            default:
+                return super.execute(method, calldata);
+        }
     }
 
-    @method({
-        name: 'addressAndAmount',
-        type: ABIDataTypes.ADDRESS_UINT256_TUPLE,
-    })
-    @emit('MultiSentBTC')
-    @returns({
-        name: 'success',
-        type: ABIDataTypes.BOOL,
-    })
-    public multiSendBTC(calldata: Calldata): BytesWriter {
-        const map = calldata.readAddressMapU256();
-        const addresses: Address[] = map.keys();
+    private multiSend(calldata: Calldata): BytesWriter {
 
-        if (addresses.length === 0) throw new Revert('No recipients');
-        if (addresses.length > this.MAX_RECIPS) throw new Revert('Exceeds 200');
+        const token = calldata.readAddress();
+        const count = calldata.readU32();
 
-        let total: u256 = u256.Zero;
-        for (let i: i32 = 0; i < addresses.length; i++) {
-            const addr = addresses[i];
-            if (!addr) throw new Revert('Invalid address');
-            total = SafeMath.add(total, map.get(addr));
+        if (count == 0) throw new Revert("No recipients");
+        if (count > 200) throw new Revert("Too many recipients");
+
+        const recipients = new Array<Address>(count as i32);
+        const amounts    = new Array<u256>(count as i32);
+
+        let total = u256.Zero;
+
+        for (let i: u32 = 0; i < count; i++) {
+            recipients[i] = calldata.readAddress();
+            amounts[i]    = calldata.readU256();
+            total = SafeMath.add(total, amounts[i]);
         }
 
-        const feeRaw = SafeMath.div(
-            SafeMath.mul(total, u256.fromU64(this.FEE_BPS)),
-            u256.fromU64(this.BPS_DENOM),
+        // 🔹 transferFrom(sender → contract)
+        const fromWriter = new BytesWriter(4 + 32 + 32 + 32);
+        fromWriter.writeSelector(
+            encodeSelector("transferFrom(address,address,uint256)")
         );
-        const dust = u256.fromU64(this.DUST);
-        const fee = feeRaw.gt(dust) ? feeRaw : dust;
+        fromWriter.writeAddress(Blockchain.tx.sender);
+        fromWriter.writeAddress(Blockchain.contractAddress);
+        fromWriter.writeU256(total);
 
-        if (Blockchain.tx.value.lt(SafeMath.add(total, fee)))
-            throw new Revert('Insufficient BTC');
+        const okFrom = Blockchain.call(token, fromWriter);
+        if (!okFrom) throw new Revert("transferFrom failed");
 
-        for (let i: i32 = 0; i < addresses.length; i++) {
-            const addr = addresses[i];
-            Blockchain.transfer(addr, map.get(addr));
+        // 🔹 transfer(contract → recipients)
+        for (let i: u32 = 0; i < count; i++) {
+
+            const toWriter = new BytesWriter(4 + 32 + 32);
+            toWriter.writeSelector(
+                encodeSelector("transfer(address,uint256)")
+            );
+            toWriter.writeAddress(recipients[i]);
+            toWriter.writeU256(amounts[i]);
+
+            const okTo = Blockchain.call(token, toWriter);
+            if (!okTo) throw new Revert("transfer failed");
         }
 
-        const excess = SafeMath.sub(Blockchain.tx.value, SafeMath.add(total, fee));
-        if (excess.gt(dust)) Blockchain.transfer(Blockchain.tx.origin, excess);
+        // update counter
+        this._txCount.set(
+            SafeMath.add(this._txCount.value, u256.One)
+        );
 
-        this.emitEvent(new MultiSentBTCEvent(total, u32(addresses.length)));
-        return new BytesWriter(0);
-    }
+        this.emitEvent(new MultiSentEvent(token, count));
 
-    @method({ name: 'to', type: ABIDataTypes.ADDRESS })
-    @emit('FeesWithdrawn')
-    @returns({ name: 'amount', type: ABIDataTypes.UINT256 })
-    public withdrawFees(calldata: Calldata): BytesWriter {
-        this.onlyDeployer(Blockchain.tx.sender);
-        const to: Address = calldata.readAddress();
-        const bal = Blockchain.getBalance(Blockchain.contractAddress);
-        if (bal.lte(u256.Zero)) throw new Revert('No fees');
-        Blockchain.transfer(to, bal);
-        this.emitEvent(new FeesWithdrawnEvent(bal));
-        const w = new BytesWriter(32);
-        w.writeU256(bal);
+        const w = new BytesWriter(1);
+        w.writeBoolean(true);
         return w;
     }
 }

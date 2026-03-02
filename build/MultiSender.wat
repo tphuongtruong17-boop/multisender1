@@ -1,8 +1,8 @@
 (module
  (type $0 (func (param i32 i32) (result i32)))
  (type $1 (func (param i32) (result i32)))
- (type $2 (func (param i32 i32)))
- (type $3 (func))
+ (type $2 (func))
+ (type $3 (func (param i32 i32)))
  (type $4 (func (param i32 i32 i32)))
  (type $5 (func (param i32)))
  (type $6 (func (param i64 i64)))
@@ -157,6 +157,8 @@
  (data $68.1 (i32.const 6280) "\02\00\00\00D\00\00\00d\00e\00c\00r\00e\00a\00s\00e\00A\00l\00l\00o\00w\00a\00n\00c\00e\00(\00a\00d\00d\00r\00e\00s\00s\00,\00u\00i\00n\00t\002\005\006\00)")
  (data $69 (i32.const 6364) ",")
  (data $69.1 (i32.const 6376) "\02\00\00\00\1a\00\00\00b\00u\00r\00n\00(\00u\00i\00n\00t\002\005\006\00)")
+ (export "start" (func $src/index/start))
+ (export "onDeploy" (func $src/index/start))
  (export "memory" (memory $0))
  (start $~start)
  (func $~lib/string/String.__concat (param $0 i32) (param $1 i32) (result i32)
@@ -1667,6 +1669,8 @@
   call $~lib/@btc-vision/btc-runtime/runtime/env/BlockchainEnvironment/BlockchainEnvironment#get:nextPointer
   global.get $~lib/@btc-vision/btc-runtime/runtime/env/index/Blockchain
   call $~lib/@btc-vision/btc-runtime/runtime/env/BlockchainEnvironment/BlockchainEnvironment#get:nextPointer
+ )
+ (func $src/index/start
  )
  (func $~start
   i32.const 6412
