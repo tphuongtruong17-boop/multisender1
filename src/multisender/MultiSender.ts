@@ -138,7 +138,7 @@ export class MultiSender extends ReentrancyGuard {
     )
     public multiSend(calldata: Calldata): BytesWriter {
         this._requireNotPaused();
-        this._requireTokenGate();
+        
 
         const token: Address      = calldata.readAddress();
         const recipients: Address[] = calldata.readAddressArray();
@@ -168,7 +168,7 @@ export class MultiSender extends ReentrancyGuard {
     )
     public multiSendEqual(calldata: Calldata): BytesWriter {
         this._requireNotPaused();
-        this._requireTokenGate();
+        
 
         const token: Address        = calldata.readAddress();
         const recipients: Address[] = calldata.readAddressArray();
