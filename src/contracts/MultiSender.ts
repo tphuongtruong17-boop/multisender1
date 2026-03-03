@@ -1,3 +1,5 @@
+export function abort(message: usize, fileName: usize, line: u32, column: u32): void { unreachable(); }
+
 import { u256 } from "@btc-vision/as-bignum/assembly";
 import {
     Address,

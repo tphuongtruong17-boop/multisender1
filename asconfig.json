@@ -22,10 +22,8 @@
     "runtime": "stub",
     "memoryBase": 0,
     "initialMemory": 1,
-    "exportStart": "_start",
+    "exportStart": "start",
     "transform": "@btc-vision/opnet-transform",
-    "use": [
-      "abort=src/contract/index/abort"
-    ]
+    "use": ["abort=src/multisender/index/abort"]
   }
 }

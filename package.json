@@ -7,8 +7,7 @@
   },
   "dependencies": {
     "@btc-vision/btc-runtime": "^1.10.12",
-    "@btc-vision/opnet-transform": "^1.2.0",
-    "as-bignum": "latest"
+    "@btc-vision/opnet-transform": "^1.2.0"
   },
   "devDependencies": {
     "assemblyscript": "latest"

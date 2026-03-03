@@ -1,34 +1,199 @@
 {
     "functions": [
         {
-            "name": "multiSendBTC",
+            "name": "transferOwnership",
             "type": "Function",
             "payable": false,
             "onlyOwner": false,
             "inputs": [
                 {
-                    "name": "addressAndAmount",
-                    "type": "ADDRESS_UINT256_TUPLE"
+                    "name": "newOwner",
+                    "type": "ADDRESS"
                 }
             ],
+            "outputs": []
+        },
+        {
+            "name": "pause",
+            "type": "Function",
+            "payable": false,
+            "onlyOwner": false,
+            "inputs": [],
+            "outputs": []
+        },
+        {
+            "name": "unpause",
+            "type": "Function",
+            "payable": false,
+            "onlyOwner": false,
+            "inputs": [],
+            "outputs": []
+        },
+        {
+            "name": "setFee",
+            "type": "Function",
+            "payable": false,
+            "onlyOwner": false,
+            "inputs": [
+                {
+                    "name": "fee",
+                    "type": "UINT256"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "setGateEnabled",
+            "type": "Function",
+            "payable": false,
+            "onlyOwner": false,
+            "inputs": [
+                {
+                    "name": "enabled",
+                    "type": "BOOL"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "setGateToken",
+            "type": "Function",
+            "payable": false,
+            "onlyOwner": false,
+            "inputs": [
+                {
+                    "name": "token",
+                    "type": "ADDRESS"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "setGateAmount",
+            "type": "Function",
+            "payable": false,
+            "onlyOwner": false,
+            "inputs": [
+                {
+                    "name": "amount",
+                    "type": "UINT256"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "multiSend",
+            "type": "Function",
+            "payable": false,
+            "onlyOwner": false,
+            "inputs": [
+                {
+                    "name": "token",
+                    "type": "ADDRESS"
+                },
+                {
+                    "name": "recipients",
+                    "type": "ARRAY_OF_ADDRESSES"
+                },
+                {
+                    "name": "amounts",
+                    "type": "ARRAY_OF_UINT256"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "multiSendEqual",
+            "type": "Function",
+            "payable": false,
+            "onlyOwner": false,
+            "inputs": [
+                {
+                    "name": "token",
+                    "type": "ADDRESS"
+                },
+                {
+                    "name": "recipients",
+                    "type": "ARRAY_OF_ADDRESSES"
+                },
+                {
+                    "name": "amountEach",
+                    "type": "UINT256"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "getOwner",
+            "type": "Function",
+            "payable": false,
+            "onlyOwner": false,
+            "inputs": [],
             "outputs": [
                 {
-                    "name": "success",
+                    "name": "owner",
+                    "type": "ADDRESS"
+                }
+            ]
+        },
+        {
+            "name": "getFee",
+            "type": "Function",
+            "payable": false,
+            "onlyOwner": false,
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "fee",
+                    "type": "UINT256"
+                }
+            ]
+        },
+        {
+            "name": "isPaused",
+            "type": "Function",
+            "payable": false,
+            "onlyOwner": false,
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "paused",
                     "type": "BOOL"
                 }
             ]
         },
         {
-            "name": "withdrawFees",
+            "name": "isGateEnabled",
             "type": "Function",
             "payable": false,
             "onlyOwner": false,
-            "inputs": [
+            "inputs": [],
+            "outputs": [
                 {
-                    "name": "to",
+                    "name": "enabled",
+                    "type": "BOOL"
+                }
+            ]
+        },
+        {
+            "name": "getGateToken",
+            "type": "Function",
+            "payable": false,
+            "onlyOwner": false,
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "token",
                     "type": "ADDRESS"
                 }
-            ],
+            ]
+        },
+        {
+            "name": "getGateAmount",
+            "type": "Function",
+            "payable": false,
+            "onlyOwner": false,
+            "inputs": [],
             "outputs": [
                 {
                     "name": "amount",
@@ -37,30 +202,5 @@
             ]
         }
     ],
-    "events": [
-        {
-            "name": "MultiSentBTC",
-            "values": [
-                {
-                    "name": "total",
-                    "type": "UINT256"
-                },
-                {
-                    "name": "recipients",
-                    "type": "UINT32"
-                }
-            ],
-            "type": "Event"
-        },
-        {
-            "name": "FeesWithdrawn",
-            "values": [
-                {
-                    "name": "amount",
-                    "type": "UINT256"
-                }
-            ],
-            "type": "Event"
-        }
-    ]
+    "events": []
 }
